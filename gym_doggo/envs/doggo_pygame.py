@@ -10,7 +10,7 @@ class Dog:
         self.pos = pos
         self.x = self.pos[0]
         self.y = self.pos[1]
-        self.velocity = 5
+        self.velocity = 2
 
     def animate(self, direc):
         anim = None
@@ -72,7 +72,9 @@ class DoggoPygame:
         self.w = 1000  # screen width
         self.h = 600  # screen height
         self.screen = pygame.display.set_mode((self.w, self.h))  # initialize the screen
-        self.background = pygame.image.load("pics/background.png").convert()
+        self.background = pygame.image.load("pics/background.png")
+        self.bg_x = 0
+        self.bg_x2 = self.background.get_width()
         self.carryOn = True
         self.walkCount = 0
         self.direc_walk = 'walk_right'
@@ -83,7 +85,11 @@ class DoggoPygame:
         self.is_jump = False
         self.jump_count = 10
 
-        self.dog = Dog((20, 400))
+        self.scroll = False
+
+        self.rect = pygame.Rect(100, 400, 10, 100)
+
+        self.dog = Dog((50, 400))
         self.clock = pygame.time.Clock()  # to control how fast the screen updates
 
     def view(self):
@@ -92,7 +98,28 @@ class DoggoPygame:
         :return:
         """
         self.clock.tick(FPS)
-        self.screen.blit(self.background, [0, 0])  # reset the latest frame
+
+        if self.walk_right:
+            self.scroll = True
+
+        if self.dog.x is not 0 and self.scroll:
+            self.dog.velocity = 2
+            if self.bg_x < self.background.get_width() * -1:  # If our bg is at the -width then reset its position
+                self.bg_x = self.background.get_width()
+            if self.bg_x2 < self.background.get_width() * -1:  # If our bg is at the -width then reset its position
+                self.bg_x2 = self.background.get_width()
+            if self.bg_x > self.background.get_width():  # If our bg is at the -width then reset its position
+                self.bg_x = self.background.get_width() * -1
+            if self.bg_x2 > self.background.get_width():  # If our bg is at the -width then reset its position
+                self.bg_x2 = self.background.get_width() * -1
+            self.screen.blit(self.background, [self.bg_x, 0])  # reset the latest frame
+            self.screen.blit(self.background, [self.bg_x2, 0])  # reset the latest frame
+        else:
+            self.dog.velocity = 5
+            self.screen.blit(self.background, [self.bg_x, 0])  # reset the latest frame
+            self.screen.blit(self.background, [self.bg_x2, 0])
+            self.bg_x = 0
+            self.bg_x2 = self.background.get_width()
 
         for event in pygame.event.get():  # User did something
             if event.type == pygame.QUIT:  # If user clicked close
@@ -102,6 +129,8 @@ class DoggoPygame:
 
         # move to the right
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.bg_x -= 5
+            self.bg_x2 -= 5
             if not self.is_jump:
                 self.walk_right = True
             self.direc_walk = 'walk_right'
@@ -116,6 +145,8 @@ class DoggoPygame:
 
         # move to the left
         elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.bg_x += 5
+            self.bg_x2 += 5
             if not self.is_jump:
                 self.walk_left = True
             self.direc_walk = 'walk_left'
@@ -151,4 +182,5 @@ class DoggoPygame:
                 self.jump_count = 10
                 self.is_jump = False
 
+        print(self.dog.x)
         pygame.display.update()
