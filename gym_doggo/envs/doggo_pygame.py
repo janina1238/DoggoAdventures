@@ -3,6 +3,7 @@ import pygame
 BLACK = (0, 0, 0)
 FPS = 60
 
+
 class Dog:
 
     def __init__(self, pos):
