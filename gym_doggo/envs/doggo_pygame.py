@@ -12,22 +12,23 @@ class Dog:
         self.y = self.pos[1]
 
     def animate(self, direc):
+        move = None
 
         # stand right
         if direc == 0:
             move = [pygame.image.load("pics/dog_right_stand.png"),
-                           pygame.image.load("pics/dog_right_stand2.png")]
+                    pygame.image.load("pics/dog_right_stand2.png")]
 
         # walk right
         if direc == 1:
             move = [pygame.image.load("pics/dog_right1.png"),
-                          pygame.image.load("pics/dog_right2.png"),
-                          pygame.image.load("pics/dog_right3.png"),
-                          pygame.image.load("pics/dog_right4.png"),
-                          pygame.image.load("pics/dog_right5.png"),
-                          pygame.image.load("pics/dog_right6.png"),
-                          pygame.image.load("pics/dog_right7.png"),
-                          pygame.image.load("pics/dog_right8.png")]
+                    pygame.image.load("pics/dog_right2.png"),
+                    pygame.image.load("pics/dog_right3.png"),
+                    pygame.image.load("pics/dog_right4.png"),
+                    pygame.image.load("pics/dog_right5.png"),
+                    pygame.image.load("pics/dog_right6.png"),
+                    pygame.image.load("pics/dog_right7.png"),
+                    pygame.image.load("pics/dog_right8.png")]
 
         if direc == 2:
             move = [pygame.image.load("pics/dog_left1.png"),
@@ -45,6 +46,7 @@ class Dog:
 
         # dog_image = pygame.image.load("dog_run1.png").convert()
         return move
+
 
 class DoggoPygame:
 
