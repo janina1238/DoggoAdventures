@@ -92,6 +92,10 @@ class DoggoPygame:
         self.dog = Dog((50, 400))
         self.clock = pygame.time.Clock()  # to control how fast the screen updates
 
+        self.jump_effect = pygame.mixer.Sound('sound/8bitgame10_16bit.wav')
+        pygame.mixer.music.load('sound/purrple-cat-field-of-fireflies.mp3')
+        pygame.mixer.music.play(-1)
+
     def view(self):
         """
         Draw the game
@@ -103,7 +107,7 @@ class DoggoPygame:
             self.scroll = True
 
         if self.dog.x is not 0 and self.scroll:
-            self.dog.velocity = 2
+            self.dog.velocity = 1
             if self.bg_x < self.background.get_width() * -1:  # If our bg is at the -width then reset its position
                 self.bg_x = self.background.get_width()
             if self.bg_x2 < self.background.get_width() * -1:  # If our bg is at the -width then reset its position
@@ -129,8 +133,8 @@ class DoggoPygame:
 
         # move to the right
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.bg_x -= 5
-            self.bg_x2 -= 5
+            self.bg_x -= 7
+            self.bg_x2 -= 7
             if not self.is_jump:
                 self.walk_right = True
             self.direc_walk = 'walk_right'
@@ -145,8 +149,8 @@ class DoggoPygame:
 
         # move to the left
         elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            self.bg_x += 5
-            self.bg_x2 += 5
+            self.bg_x += 7
+            self.bg_x2 += 7
             if not self.is_jump:
                 self.walk_left = True
             self.direc_walk = 'walk_left'
@@ -170,6 +174,7 @@ class DoggoPygame:
 
         if not self.is_jump:
             if keys[pygame.K_SPACE]:
+                self.jump_effect.play()
                 self.is_jump = True
                 self.walk_right = False
                 self.walk_left = False
@@ -182,5 +187,4 @@ class DoggoPygame:
                 self.jump_count = 10
                 self.is_jump = False
 
-        print(self.dog.x)
         pygame.display.update()
