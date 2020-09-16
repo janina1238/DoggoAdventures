@@ -29,6 +29,8 @@ class Dog(Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
+        self.is_jump = False
+        self.keep_scrolling = True
 
     def update(self):
         pygame.draw.rect(self.image, RED, [0, 0, self.width, self.height])
@@ -106,13 +108,26 @@ class Dog(Sprite):
 
     def check_collision(self, dog, obstacle):
         if pygame.sprite.collide_mask(dog, obstacle):
-            print('IS COLLIDING')
-            #self.coll_flag = True
-            if self.y == 400:
-                self.x = obstacle.x - self.width
-                self.velocity = 0
-            if self.y == 350:
-                self.y = 350
+            if self.x < obstacle.x <= self.x + self.width and self.y == 410:
+                self.keep_scrolling = False
+                self.x = (obstacle.rect.x - self.width)
+                self.rect.x = (obstacle.rect.x - self.width)
+            elif obstacle.x < self.x < obstacle.x + obstacle.width and self.y == 410:
+                self.keep_scrolling = False
+                self.x = obstacle.x + obstacle.width
+                self.rect.x = obstacle.x + obstacle.width
+            elif self.y + self.height <= obstacle.y + (obstacle.height / 2):
+                self.keep_scrolling = True
+                self.y = (obstacle.y - self.height)
+                self.rect.y = (obstacle.y - self.height)
+            elif self.x + 100 < obstacle.x and not self.is_jump:
+                self.keep_scrolling = True
+                self.y = 410
+                self.rect.y = 410
+            elif self.x > obstacle.x + obstacle.width and not self.is_jump:
+                self.keep_scrolling = True
+                self.y = 410
+                self.rect.y = 410
 
 
 class Treestump(Sprite):
@@ -129,7 +144,7 @@ class Treestump(Sprite):
         self.image.fill(BLACK)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        self.rect.x = pos[0]+23
+        self.rect.x = pos[0] + 23
         self.rect.y = pos[1]
 
     def update(self):
@@ -153,7 +168,7 @@ class Bush(Sprite):
         self.image.fill(BLACK)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        self.rect.x = pos[0]
+        self.rect.x = pos[0] + 8
         self.rect.y = pos[1]
 
     def update(self):
@@ -180,19 +195,16 @@ class DoggoPygame:
         self.direc_jump = 'jump_right'
         self.walk_right = False
         self.walk_left = False
-        self.is_jump = False
         self.jump_count = 10
         self.vel_obj = 0
 
         self.scroll = False
         self.is_out = False
 
-        self.dog = Dog((50, 400), (135, 115), self.screen)
+        self.dog = Dog((50, 410), (135, 115), self.screen)
         self.rand_x = random.randint(100, 600)
         self.rand_x2 = random.randint(100, 600)
         self.obstacles = []  # random objects
-
-        self.treestump = None
 
         self.jump_effect = pygame.mixer.Sound('sound/8bitgame10_16bit_short.wav')
         self.run_effect = pygame.mixer.Sound('sound/step_grass.wav')
@@ -208,6 +220,9 @@ class DoggoPygame:
         # Add the paddles and the ball to the list of objects
         self.all_sprites_list.add(self.dog)
 
+        self.finish = pygame.image.load("pics/finish2.png")
+        self.f_x = 1500
+
     def rand_obj(self):
         if self.dog.x > 100:
             self.is_out = True
@@ -219,24 +234,22 @@ class DoggoPygame:
         """
         self.clock.tick(FPS)
 
-        if self.walk_right:
-            self.scroll = True
+        for obstacle in self.obstacles:
+            self.all_sprites_list.add(obstacle)
+            self.dog.check_collision(self.dog, obstacle)
 
-        if self.dog.x is not 0 and self.scroll:
-            self.dog.velocity = 1
-            if self.bg_x < self.background.get_width() * -1:  # If our bg is at the -width then reset its position
-                self.bg_x = self.background.get_width()
-            if self.bg_x2 < self.background.get_width() * -1:  # If our bg is at the -width then reset its position
-                self.bg_x2 = self.background.get_width()
-            if self.bg_x > self.background.get_width():  # If our bg is at the -width then reset its position
-                self.bg_x = self.background.get_width() * -1
-            if self.bg_x2 > self.background.get_width():  # If our bg is at the -width then reset its position
-                self.bg_x2 = self.background.get_width() * -1
-            self.screen.blit(self.background, [self.bg_x, 0])  # reset the latest frame
-            self.screen.blit(self.background, [self.bg_x2, 0])  # reset the latest frame
-        else:
-            self.screen.blit(self.background, [self.bg_x, 0])  # reset the latest frame
-            self.screen.blit(self.background, [self.bg_x2, 0])
+        self.all_sprites_list.draw(self.screen)
+
+        if self.bg_x <= self.background.get_width() * -1:  # If our bg is at the -width then reset its position
+            self.bg_x = self.background.get_width()
+        if self.bg_x2 <= self.background.get_width() * -1:  # If our bg is at the -width then reset its position
+            self.bg_x2 = self.background.get_width()
+        if self.bg_x > self.background.get_width():  # If our bg is at the -width then reset its position
+            self.bg_x = self.background.get_width() * -1
+        if self.bg_x2 > self.background.get_width():  # If our bg is at the -width then reset its position
+            self.bg_x2 = self.background.get_width() * -1
+        self.screen.blit(self.background, [self.bg_x, 0])  # reset the latest frame
+        self.screen.blit(self.background, [self.bg_x2, 0])  # reset the latest frame
 
         for event in pygame.event.get():  # User did something
             if event.type == pygame.QUIT:  # If user clicked close
@@ -247,27 +260,31 @@ class DoggoPygame:
             if r == 0:
                 self.obstacles.append(Treestump((1000, 430), (85, 95), self.screen))
             elif r == 1:
-                self.obstacles.append(Bush((1000, 430), (100, 95), self.screen))
+                self.obstacles.append(Bush((1000, 430), (85, 95), self.screen))
 
-        for obstacle in self.obstacles:
-            self.all_sprites_list.add(obstacle)
-
-        self.all_sprites_list.draw(self.screen)
+        self.all_sprites_list.update()
 
         # check if any key is pressed
         keys = pygame.key.get_pressed()
 
+        if self.dog.x > 750:
+            self.screen.blit(self.finish, (self.f_x, 380))
+
         # move to the right
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            self.bg_x -= 8
-            self.bg_x2 -= 8
-            for obstacle in self.obstacles:
-                obstacle.x -= 8
-                obstacle.rect.x -=8
-                if obstacle.x < obstacle.width * -1:  # If our obstacle is off the screen we will remove it
-                    self.obstacles.pop(self.obstacles.index(obstacle))
-                    self.all_sprites_list.remove(obstacle)
-            if not self.is_jump:
+            if self.dog.keep_scrolling and self.dog.x < 850:
+                self.bg_x -= 8
+                self.bg_x2 -= 8
+                if self.dog.x > 750:
+                    self.f_x -= 7           # TO-DO: Ziel soll bleiben, wenn erreicht und hintergrund nicht mehr bewegen
+                self.dog.velocity = 1
+                for obstacle in self.obstacles:
+                    obstacle.x -= 8
+                    obstacle.rect.x -= 8
+                    if obstacle.x < obstacle.width * -1:  # If our obstacle is off the screen we will remove it
+                        self.obstacles.pop(self.obstacles.index(obstacle))
+                        self.all_sprites_list.remove(obstacle)
+            if not self.dog.is_jump:
                 self.run_effect.play()
                 self.walk_right = True
             self.direc_walk = 'walk_right'
@@ -280,13 +297,13 @@ class DoggoPygame:
         # move to the left
         elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
             self.run_effect.play()
-            self.dog.velocity = 5
+            self.dog.velocity = 6
             for obstacle in self.obstacles:
                 obstacle.x += 0
                 obstacle.rect.x += 0
                 if obstacle.x < obstacle.width * -1:  # If our obstacle is off the screen we will remove it
                     self.obstacles.pop(self.obstacles.index(obstacle))
-            if not self.is_jump:
+            if not self.dog.is_jump:
                 self.walk_left = True
             self.direc_walk = 'walk_left'
             self.direc_stand = 'stand_left'
@@ -296,33 +313,26 @@ class DoggoPygame:
             self.dog.move('left')
 
         # just stand still
-        elif not any(keys) and not self.is_jump:
+        elif not any(keys) and not self.dog.is_jump:
             self.run_effect.stop()
             self.dog.animate_run(self.direc_stand)
 
         # jump
-        if not self.is_jump:
+        if not self.dog.is_jump:
             if keys[pygame.K_SPACE]:
                 self.run_effect.stop()
                 self.jump_effect.play()
-                self.is_jump = True
+                self.dog.is_jump = True
                 self.walk_right = False
                 self.walk_left = False
-        elif self.is_jump:
+        elif self.dog.is_jump:
             self.dog.animate_jump()
             if self.jump_count >= -10:
                 self.dog.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.dog.rect.y -= (self.jump_count * abs(self.jump_count)) * 0.5
                 self.jump_count -= 1
             else:
                 self.jump_count = 10
-                self.is_jump = False
-
-        self.all_sprites_list.update()
-
-        for obstacle in self.obstacles:
-            if pygame.sprite.collide_mask(self.dog, obstacle):
-                print("is colliding")
-            else:
-                print("is not colliding")
+                self.dog.is_jump = False
 
         pygame.display.update()
