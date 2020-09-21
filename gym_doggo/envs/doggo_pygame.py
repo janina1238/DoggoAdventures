@@ -227,6 +227,11 @@ class DoggoPygame:
         self.walkCount = 0
         self.fin = [pygame.image.load("pics/finish2.png"), pygame.image.load("pics/finish3.png")]
 
+        self.birdCount = 0
+        self.bird_x = 1100
+        self.bird_move = False
+        self.bird = [pygame.image.load("pics/bird1.png"), pygame.image.load("pics/bird2.png"), pygame.image.load("pics/bird3.png"), pygame.image.load("pics/bird4.png")]
+
         self.dog_house = pygame.image.load("pics/dog_house2.png")
         self.d_x = 400
 
@@ -267,6 +272,7 @@ class DoggoPygame:
             if r == 0:
                 self.obstacles.append(Treestump((1000, 450), (85, 95), self.screen))
             elif r == 1:
+                self.bird_move = True
                 self.obstacles.append(Bush((1000, 450), (85, 95), self.screen))
 
         self.all_sprites_list.update()
@@ -281,6 +287,13 @@ class DoggoPygame:
             self.walkCount += 1
             self.screen.blit(self.fin[self.walkCount // 12], (self.f_x, 380))
 
+        if self.birdCount + 1 >= 24:
+            self.birdCount = 0
+        self.birdCount += 1
+        if self.bird_move:
+            self.bird_x -= 3
+        self.screen.blit(self.bird[self.birdCount // 6], (self.bird_x, 280))
+
         # draw dog house
         #self.screen.blit(self.dog_house, [self.d_x, 300])
 
@@ -291,6 +304,8 @@ class DoggoPygame:
                 self.bg_x2 -= 8
                 self.d_x -= 8
                 self.dog.velocity = 1
+                if self.bird_move:
+                    self.bird_x -= 8
                 if self.dog.x > 670:
                     self.f_x -= 8
                 for obstacle in self.obstacles:
