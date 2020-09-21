@@ -222,7 +222,14 @@ class DoggoPygame:
         self.all_sprites_list.add(self.dog)
 
         self.finish = pygame.image.load("pics/finish2.png")
-        self.f_x = 1000
+        self.f_x = 960
+
+        self.house2 = pygame.image.load("pics/house3.png")
+        self.house_with_flag = [pygame.image.load("pics/house3_flag1.png"),
+                                pygame.image.load("pics/house3_flag3.png"),
+                                pygame.image.load("pics/house3_flag4.png"),
+                                pygame.image.load("pics/house3_flag5.png"),
+                                pygame.image.load("pics/house3_flag6.png"), ]
 
         self.walkCount = 0
         self.fin = [pygame.image.load("pics/finish2.png"), pygame.image.load("pics/finish3.png")]
@@ -267,7 +274,7 @@ class DoggoPygame:
             if event.type == pygame.QUIT:  # If user clicked close
                 self.carryOn = False  # Flag that we are done so we exit this loop
 
-        if self.dog.x == 100 or self.dog.x == 150 or self.dog.x == 300 or self.dog.x == 500 or self.dog.x == 580:
+        if self.dog.x == 100 or self.dog.x == 150 or self.dog.x == 300 or self.dog.x == 450 or self.dog.x == 500:
             r = random.randrange(0, 2)
             if r == 0:
                 self.obstacles.append(Treestump((1000, 450), (85, 95), self.screen))
@@ -281,11 +288,11 @@ class DoggoPygame:
         keys = pygame.key.get_pressed()
 
         # draw fin flag
-        if self.dog.x > 670:
-            if self.walkCount + 1 >= 24:
+        if self.dog.x > 600:
+            if self.walkCount + 1 >= 40:
                 self.walkCount = 0
             self.walkCount += 1
-            self.screen.blit(self.fin[self.walkCount // 12], (self.f_x, 380))
+            self.screen.blit(self.house_with_flag[self.walkCount // 8], (self.f_x, 330))  # (self.f_x, 350))
 
         if self.birdCount + 1 >= 24:
             self.birdCount = 0
@@ -294,20 +301,20 @@ class DoggoPygame:
             self.bird_x -= 3
         self.screen.blit(self.bird[self.birdCount // 6], (self.bird_x, 280))
 
-        # draw dog house
-        #self.screen.blit(self.dog_house, [self.d_x, 300])
-
         # move to the right
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            if self.dog.keep_scrolling and self.dog.x < 700:
+            if self.dog.keep_scrolling and self.dog.x < 640:
                 self.bg_x -= 8
                 self.bg_x2 -= 8
                 self.d_x -= 8
                 self.dog.velocity = 1
                 if self.bird_move:
                     self.bird_x -= 8
-                if self.dog.x > 670:
-                    self.f_x -= 8
+                if self.dog.x > 600:
+                    if self.f_x > 660:
+                        self.f_x -= 8
+                    else:
+                        self.f_x -= 0
                 for obstacle in self.obstacles:
                     obstacle.x -= 9
                     obstacle.rect.x -= 9
@@ -315,7 +322,6 @@ class DoggoPygame:
                         self.obstacles.pop(self.obstacles.index(obstacle))
                         self.all_sprites_list.remove(obstacle)
             else:
-                self.f_x -= 0
                 self.bg_x -= 0
                 self.bg_x2 -= 0
                 self.dog.velocity = 6
