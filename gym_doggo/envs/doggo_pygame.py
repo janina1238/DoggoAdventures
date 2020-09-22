@@ -130,11 +130,40 @@ class Dog(Sprite):
                 self.rect.y = 430
 
 
-class Treestump(Sprite):
+class Background:
+
+    def __init__(self, first_background, second_background, _render=None):
+        self.render = _render
+        self.first_background = first_background
+        self.second_background = second_background
+        self.bg_x = 0
+        self.bg_x2 = self.first_background.get_width()
+
+    def draw(self):
+        self.render.blit(self.first_background, [self.bg_x, 0])  # reset the latest frame
+        self.render.blit(self.second_background, [self.bg_x2, 0])  # reset the latest frame
+
+    def scroll(self):
+        self.bg_x -= 8
+        self.bg_x2 -= 8
+
+    def update(self):
+        if self.bg_x <= self.first_background.get_width() * -1:  # If our bg is at the -width then reset its position
+            self.bg_x = self.first_background.get_width()
+        if self.bg_x2 <= self.second_background.get_width() * -1:  # If our bg is at the -width then reset its position
+            self.bg_x2 = self.second_background.get_width()
+        if self.bg_x > self.first_background.get_width():  # If our bg is at the -width then reset its position
+            self.bg_x = self.first_background.get_width() * -1
+        if self.bg_x2 > self.second_background.get_width():  # If our bg is at the -width then reset its position
+            self.bg_x2 = self.second_background.get_width() * -1
+
+
+class TreeStump(Sprite):
 
     def __init__(self, pos, size, _render):
         super().__init__()
 
+        self.treestump = pygame.image.load("pics/treestump.png")
         self.render = _render
         self.x = pos[0]
         self.y = pos[1]
@@ -149,8 +178,7 @@ class Treestump(Sprite):
 
     def update(self):
         pygame.draw.rect(self.image, GREEN, [0, 0, self.width, self.height])
-        treestump = pygame.image.load("pics/treestump.png")
-        self.render.blit(treestump, (self.x, self.y))
+        self.render.blit(self.treestump, (self.x, self.y))
 
 
 class Bush(Sprite):
@@ -158,6 +186,7 @@ class Bush(Sprite):
     def __init__(self, pos, size, _render):
         super().__init__()
 
+        self.bush = pygame.image.load("pics/bush.png")
         self.render = _render
         self.image = _render
         self.x = pos[0]
@@ -172,9 +201,59 @@ class Bush(Sprite):
         self.rect.y = pos[1]
 
     def update(self):
-        bush = pygame.image.load("pics/bush.png")
-        self.render.blit(bush, (self.x, self.y))
+        self.render.blit(self.bush, (self.x, self.y))
         pygame.draw.rect(self.image, RED, [0, 0, self.width, self.height])
+
+
+class Bird:
+
+    def __init__(self, _render=None):
+        self.render = _render
+        self.start_moving = False
+        self.bird = [pygame.image.load("pics/bird1.png"), pygame.image.load("pics/bird2.png"),
+                     pygame.image.load("pics/bird3.png"), pygame.image.load("pics/bird4.png")]
+        self.fly_count = 0
+        self.x = 1000
+        self.y = 280
+
+    def animate(self):
+        if self.fly_count + 1 >= 24:
+            self.fly_count = 0
+        self.fly_count += 1
+        self.render.blit(self.bird[self.fly_count // 6], (self.x, self.y))
+
+    def update(self, velocity):
+        if self.start_moving:
+            self.x -= velocity
+
+
+class DogHouse:
+
+    def __init__(self, _render=None):
+        self.house = [pygame.image.load("pics/house3_flag1.png"),
+                      pygame.image.load("pics/house3_flag3.png"),
+                      pygame.image.load("pics/house3_flag4.png"),
+                      pygame.image.load("pics/house3_flag5.png"),
+                      pygame.image.load("pics/house3_flag6.png")]
+        self.render = _render
+        self.walk_count = 0
+        self.x = 960
+        self.y = 330
+
+    def animate(self):
+        if self.walk_count + 1 >= 40:
+            self.walk_count = 0
+        self.walk_count += 1
+        self.render.blit(self.house[self.walk_count // 8], (self.x, self.y))
+
+    def draw(self):
+        self.render.blit(self.house[self.walk_count // 8], (self.x, self.y))
+
+    def update(self):
+        if self.x > 660:
+            self.x -= 8
+        else:
+            self.x -= 0
 
 
 class DoggoPygame:
@@ -185,12 +264,6 @@ class DoggoPygame:
         self.h = 600  # screen height
         self.screen = pygame.display.set_mode((self.w, self.h))  # initialize the screen
         self.clock = pygame.time.Clock()  # to control how fast the screen updates
-
-        self.background = pygame.image.load("pics/background_tree_advanced.png")
-        self.background2 = pygame.image.load("pics/background_tree_advanced2.png")
-        self.bg_x = 0
-        self.bg_x2 = self.background.get_width()
-        self.carryOn = True
         self.direc_walk = 'walk_right'
         self.direc_stand = 'stand_right'
         self.direc_jump = 'jump_right'
@@ -198,53 +271,31 @@ class DoggoPygame:
         self.walk_left = False
         self.jump_count = 10
         self.vel_obj = 0
-
         self.scroll = False
-        self.is_out = False
 
+        # set all objects
+        self.background = Background(pygame.image.load("pics/background_tree_advanced2.png"),
+                                     pygame.image.load("pics/background_tree_advanced.png"), self.screen)
         self.dog = Dog((50, 430), (135, 115), self.screen)
-        self.rand_x = random.randint(100, 600)
-        self.rand_x2 = random.randint(100, 600)
+        self.bird = Bird(self.screen)
         self.obstacles = []  # random objects
+        self.house_with_flag = [pygame.image.load("pics/house3_flag1.png"),
+                                pygame.image.load("pics/house3_flag3.png"),
+                                pygame.image.load("pics/house3_flag4.png"),
+                                pygame.image.load("pics/house3_flag5.png"),
+                                pygame.image.load("pics/house3_flag6.png"), ]
+        self.finish = DogHouse(self.screen)
 
+        # set all sounds
         self.jump_effect = pygame.mixer.Sound('sound/8bitgame10_16bit_short.wav')
         self.run_effect = pygame.mixer.Sound('sound/step_grass.wav')
         self.run_effect.set_volume(0.18)
         pygame.mixer.music.load('sound/purrple-cat-field-of-fireflies.mp3')
         pygame.mixer.music.play(-1)
 
-        pygame.time.set_timer(USEREVENT + 2, 5000)
-
         # This will be a list that will contain all the sprites we intend to use in our game.
-        self.all_sprites_list = pygame.sprite.Group()
-
-        # Add the paddles and the ball to the list of objects
-        self.all_sprites_list.add(self.dog)
-
-        self.finish = pygame.image.load("pics/finish2.png")
-        self.f_x = 960
-
-        self.house2 = pygame.image.load("pics/house3.png")
-        self.house_with_flag = [pygame.image.load("pics/house3_flag1.png"),
-                                pygame.image.load("pics/house3_flag3.png"),
-                                pygame.image.load("pics/house3_flag4.png"),
-                                pygame.image.load("pics/house3_flag5.png"),
-                                pygame.image.load("pics/house3_flag6.png"), ]
-
-        self.walkCount = 0
-        self.fin = [pygame.image.load("pics/finish2.png"), pygame.image.load("pics/finish3.png")]
-
-        self.birdCount = 0
-        self.bird_x = 1100
-        self.bird_move = False
-        self.bird = [pygame.image.load("pics/bird1.png"), pygame.image.load("pics/bird2.png"), pygame.image.load("pics/bird3.png"), pygame.image.load("pics/bird4.png")]
-
-        self.dog_house = pygame.image.load("pics/dog_house2.png")
-        self.d_x = 400
-
-    def rand_obj(self):
-        if self.dog.x > 100:
-            self.is_out = True
+        self.sprites = pygame.sprite.Group()
+        self.sprites.add(self.dog)
 
     def view(self):
         """
@@ -253,77 +304,59 @@ class DoggoPygame:
         """
         self.clock.tick(FPS)
 
-        for obstacle in self.obstacles:
-            self.all_sprites_list.add(obstacle)
-            self.dog.check_collision(self.dog, obstacle)
-
-        self.all_sprites_list.draw(self.screen)
-
-        if self.bg_x <= self.background.get_width() * -1:  # If our bg is at the -width then reset its position
-            self.bg_x = self.background.get_width()
-        if self.bg_x2 <= self.background2.get_width() * -1:  # If our bg is at the -width then reset its position
-            self.bg_x2 = self.background2.get_width()
-        if self.bg_x > self.background.get_width():  # If our bg is at the -width then reset its position
-            self.bg_x = self.background.get_width() * -1
-        if self.bg_x2 > self.background2.get_width():  # If our bg is at the -width then reset its position
-            self.bg_x2 = self.background2.get_width() * -1
-        self.screen.blit(self.background, [self.bg_x, 0])  # reset the latest frame
-        self.screen.blit(self.background2, [self.bg_x2, 0])  # reset the latest frame
-
         for event in pygame.event.get():  # User did something
             if event.type == pygame.QUIT:  # If user clicked close
                 self.carryOn = False  # Flag that we are done so we exit this loop
 
+        for obstacle in self.obstacles:
+            self.sprites.add(obstacle)
+            self.dog.check_collision(self.dog, obstacle)
+
+        # draws the rects from the sprites for colliding
+        # call this before background.draw() so the rects aren't visible
+        self.sprites.draw(self.screen)
+
+        # set the background
+        self.background.draw()
+        self.background.update()
+
+        # set bird animation
+        self.bird.animate()
+        self.bird.update(3)
+
+        # random object at some points
         if self.dog.x == 100 or self.dog.x == 150 or self.dog.x == 300 or self.dog.x == 450 or self.dog.x == 500:
             r = random.randrange(0, 2)
             if r == 0:
-                self.obstacles.append(Treestump((1000, 450), (85, 95), self.screen))
+                self.obstacles.append(TreeStump((1000, 450), (85, 95), self.screen))
             elif r == 1:
-                self.bird_move = True
+                self.bird.start_moving = True
                 self.obstacles.append(Bush((1000, 450), (85, 95), self.screen))
 
-        self.all_sprites_list.update()
+        # call this after appending the obstacles, so they are visible
+        self.sprites.update()
 
         # check if any key is pressed
         keys = pygame.key.get_pressed()
 
-        # draw fin flag
+        # draw dog house/finish
         if self.dog.x > 600:
-            if self.walkCount + 1 >= 40:
-                self.walkCount = 0
-            self.walkCount += 1
-            self.screen.blit(self.house_with_flag[self.walkCount // 8], (self.f_x, 330))  # (self.f_x, 350))
-
-        if self.birdCount + 1 >= 24:
-            self.birdCount = 0
-        self.birdCount += 1
-        if self.bird_move:
-            self.bird_x -= 3
-        self.screen.blit(self.bird[self.birdCount // 6], (self.bird_x, 280))
+            self.finish.animate()
+            self.finish.update()
 
         # move to the right
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             if self.dog.keep_scrolling and self.dog.x < 640:
-                self.bg_x -= 8
-                self.bg_x2 -= 8
-                self.d_x -= 8
+                self.background.scroll()
+                self.bird.update(8)
                 self.dog.velocity = 1
-                if self.bird_move:
-                    self.bird_x -= 8
-                if self.dog.x > 600:
-                    if self.f_x > 660:
-                        self.f_x -= 8
-                    else:
-                        self.f_x -= 0
                 for obstacle in self.obstacles:
                     obstacle.x -= 9
                     obstacle.rect.x -= 9
                     if obstacle.x < obstacle.width * -1:  # If our obstacle is off the screen we will remove it
                         self.obstacles.pop(self.obstacles.index(obstacle))
-                        self.all_sprites_list.remove(obstacle)
+                        self.sprites.remove(obstacle)
             else:
-                self.bg_x -= 0
-                self.bg_x2 -= 0
                 self.dog.velocity = 6
             if not self.dog.is_jump:
                 self.run_effect.play()
