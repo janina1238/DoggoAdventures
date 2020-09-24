@@ -2,6 +2,7 @@ import pygame
 import random
 from pygame import USEREVENT
 from pygame.sprite import Sprite
+from pygame.sprite import collide_mask
 
 BLACK = (0, 0, 0)
 FPS = 60
@@ -33,6 +34,12 @@ class Dog(Sprite):
         self.keep_scrolling = True
 
     def update(self):
+        if self.x > 850:
+            self.x = 850
+            self.rect.x = 850
+        if self.x < 0:
+            self.x = 0
+            self.rect.x = 0
         pygame.draw.rect(self.image, RED, [0, 0, self.width, self.height])
 
     def animate_run(self, direc):
@@ -85,9 +92,10 @@ class Dog(Sprite):
         self.render.blit(anim[self.walkCount // frames], [self.x, self.y])
 
     def animate_jump(self):
+        jump = None
         if self.direc_jump == 'jump_right':
             jump = pygame.image.load("pics/dog_right_jump.png")
-        else:
+        if self.direc_jump == 'jump_left':
             jump = pygame.image.load("pics/dog_left_jump.png")
 
         self.render.blit(jump, [self.x, self.y])
@@ -96,18 +104,12 @@ class Dog(Sprite):
         if direction == "right":
             self.x += self.velocity
             self.rect.x += self.velocity
-            if self.x > 850:
-                self.x = 850
-                self.rect.x = 850
         if direction == "left":
             self.x -= self.velocity
             self.rect.x -= self.velocity
-            if self.x < 0:
-                self.x = 0
-                self.rect.x = 0
 
-    def check_collision(self, dog, obstacle):
-        if pygame.sprite.collide_mask(dog, obstacle):
+    def check_collision_obstacle(self, dog, obstacle):
+        if collide_mask(dog, obstacle):
             if self.x < obstacle.x <= self.x + self.width and self.y == 430:
                 self.keep_scrolling = False
                 self.x = (obstacle.rect.x - self.width)
@@ -128,6 +130,10 @@ class Dog(Sprite):
                 self.keep_scrolling = True
                 self.y = 430
                 self.rect.y = 430
+
+    def check_collision_finish(self, dog, finish):
+        if collide_mask(dog, finish):
+            print("IS COLLIDING")
 
 
 class Background:
@@ -227,9 +233,12 @@ class Bird:
             self.x -= velocity
 
 
-class DogHouse:
+class DogHouse(Sprite):
 
     def __init__(self, _render=None):
+        super().__init__()
+
+        self.image = _render
         self.house = [pygame.image.load("pics/house3_flag1.png"),
                       pygame.image.load("pics/house3_flag3.png"),
                       pygame.image.load("pics/house3_flag4.png"),
@@ -239,6 +248,14 @@ class DogHouse:
         self.walk_count = 0
         self.x = 960
         self.y = 330
+        self.width = 250
+        self.height = 220
+        self.image = pygame.Surface([self.width, self.height])
+        self.image.fill(BLACK)
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
 
     def animate(self):
         if self.walk_count + 1 >= 40:
@@ -252,8 +269,11 @@ class DogHouse:
     def update(self):
         if self.x > 660:
             self.x -= 8
+            self.rect.x -= 8
         else:
             self.x -= 0
+            self.rect.x -= 0
+        pygame.draw.rect(self.image, RED, [0, 0, self.width, self.height])
 
 
 class DoggoPygame:
@@ -270,7 +290,6 @@ class DoggoPygame:
         self.walk_right = False
         self.walk_left = False
         self.jump_count = 10
-        self.vel_obj = 0
         self.scroll = False
 
         # set all objects
@@ -296,6 +315,79 @@ class DoggoPygame:
         # This will be a list that will contain all the sprites we intend to use in our game.
         self.sprites = pygame.sprite.Group()
         self.sprites.add(self.dog)
+        self.sprites.add(self.finish)
+
+        self.walk_action = 'stand_right'
+        self.stand_action = 'stand_right'
+        self.flag = 0
+
+    def action(self, action):
+        """
+        action:
+            stand still, move left, move right, jump, jump left, jump right
+        :param action:
+        :return:
+        """
+        if not self.dog.is_jump:
+            if action == 0:
+                self.walk_action = self.stand_action
+                self.run_effect.stop()
+            if action == 1:
+                self.walk_action = 'walk_right'
+                self.dog.move('right')
+                self.stand_action = 'stand_right'
+                self.run_effect.play()
+            if action == 2:
+                self.walk_action = 'walk_left'
+                self.dog.move('left')
+                self.stand_action = 'stand_left'
+                self.run_effect.play()
+        if action == 3 and self.flag != 2 and self.flag != 3:
+            self.dog.is_jump = True
+            self.flag = 1
+            if self.jump_count >= -10:
+                self.dog.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.dog.rect.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.jump_count -= 1
+                if self.jump_count == 9:
+                    self.jump_effect.play()
+            else:
+                self.jump_count = 10
+                self.dog.is_jump = False
+                self.flag = 0
+        #'''
+        if action == 4 and self.flag != 1 and self.flag != 3:
+            self.flag = 2
+            self.dog.is_jump = True
+            self.dog.direc_jump = 'jump_left'
+            if self.jump_count >= -10:
+                self.dog.x -= 5  # left jump
+                self.dog.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.dog.rect.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.jump_count -= 1
+                if self.jump_count == 9:
+                    self.jump_effect.play()
+            else:
+                self.jump_count = 10
+                self.dog.is_jump = False
+                self.flag = 0
+        if action == 5 and self.flag != 1 and self.flag != 2:
+            self.flag = 3
+            self.dog.is_jump = True
+            self.dog.direc_jump = 'jump_right'
+            if self.jump_count >= -10:
+                self.dog.x += 5  # right jump
+                self.dog.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.dog.rect.y -= (self.jump_count * abs(self.jump_count)) * 0.5
+                self.jump_count -= 1
+                if self.jump_count == 9:
+                    self.jump_effect.play()
+            else:
+                self.jump_count = 10
+                self.dog.is_jump = False
+                self.flag = 0
+        self.dog.update()
+        print(action)
 
     def view(self):
         """
@@ -310,7 +402,9 @@ class DoggoPygame:
 
         for obstacle in self.obstacles:
             self.sprites.add(obstacle)
-            self.dog.check_collision(self.dog, obstacle)
+            self.dog.check_collision_obstacle(self.dog, obstacle)
+
+        self.dog.check_collision_finish(self.dog, self.finish)
 
         # draws the rects from the sprites for colliding
         # call this before background.draw() so the rects aren't visible
@@ -334,16 +428,19 @@ class DoggoPygame:
                 self.obstacles.append(Bush((1000, 450), (85, 95), self.screen))
 
         # call this after appending the obstacles, so they are visible
-        self.sprites.update()
-
-        # check if any key is pressed
-        keys = pygame.key.get_pressed()
+        self.dog.update()
+        for obstacle in self.obstacles:
+            obstacle.update()
 
         # draw dog house/finish
         if self.dog.x > 600:
             self.finish.animate()
             self.finish.update()
 
+        # check if any key is pressed
+        keys = pygame.key.get_pressed()
+
+        '''
         # move to the right
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             if self.dog.keep_scrolling and self.dog.x < 640:
@@ -408,6 +505,14 @@ class DoggoPygame:
             else:
                 self.jump_count = 10
                 self.dog.is_jump = False
+        '''
+
+        if not self.dog.is_jump:
+            self.dog.animate_run(self.walk_action)
+        if self.dog.is_jump:
+            self.dog.animate_jump()
+
+        # '''
 
         pygame.display.set_caption('Doggo Adventure')
         pygame.display.update()
