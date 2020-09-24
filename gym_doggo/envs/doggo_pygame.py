@@ -355,7 +355,6 @@ class DoggoPygame:
                 self.jump_count = 10
                 self.dog.is_jump = False
                 self.flag = 0
-        #'''
         if action == 4 and self.flag != 1 and self.flag != 3:
             self.flag = 2
             self.dog.is_jump = True
